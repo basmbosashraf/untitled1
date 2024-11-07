@@ -5,9 +5,11 @@
 
 using namespace std;
 
+bool haltt = false;  // Global halt flag
+
 class Register {
 protected:
-    int intRegisters[16] = {0};  // Integer registers
+    int intRegisters[16] = {0};
 
 public:
     int getIntCell(int address) {
@@ -27,7 +29,7 @@ public:
 
 class Memory {
 public:
-    int memory[256] = {0};  // Integer memory cells
+    int memory[256] = {0};
 
     int getCell(int address) {
         if (address < 0 || address >= 256) {
@@ -55,11 +57,11 @@ class CU {
 public:
     void load1(int regAddr, int memAddr, Register &reg, Memory &mem) {
         try {
-            int value = mem.getCell(memAddr);  // قراءة القيمة من الذاكرة
+            int value = mem.getCell(memAddr);
             cout << "LOAD1: Loading value " << hex << value
                  << " from memory address [" << hex << memAddr
                  << "] into register R" << dec << regAddr << endl;
-            reg.setIntCell(regAddr, value);  // تخزين القيمة في السجل
+            reg.setIntCell(regAddr, value);
         } catch (const out_of_range &e) {
             cout << "Error: Memory address [" << hex << memAddr << "] out of bounds." << endl;
         }
@@ -68,7 +70,7 @@ public:
     void load2(int regAddr, int value, Register &reg) {
         cout << "LOAD2: Loading immediate value " << hex << value
              << " into register R" << dec << regAddr << endl;
-        reg.setIntCell(regAddr, value);  // تخزين القيمة في السجل مباشرة
+        reg.setIntCell(regAddr, value);  // Store the value directly in the register
     }
 
     void store(int regAddr, int memAddr, Register &reg, Memory &mem) {
@@ -120,14 +122,11 @@ public:
             return;
         }
 
-        // جلب تعليمة بحجم 16 بت من خلال دمج خليتين متتاليتين في الذاكرة
         instruction = (mem.getCell(programCounter) << 8) | mem.getCell(programCounter + 1);
 
-        // طباعة التعليمة للتأكد
         cout << "Fetched instruction: " << hex << instruction
              << " at PC: " << programCounter << endl;
 
-        // تحديث programCounter للتعليمة التالية
         programCounter += 2;
     }
 
@@ -172,14 +171,12 @@ public:
     void runNextStep(Memory &mem, int &programCounter, bool &haltt) {
         int instruction;
 
-        // جلب التعليمة
         fetch(instruction, mem, programCounter);
 
-        // تنفيذ التعليمة
         execute(instruction, mem, reg, cu, programCounter, haltt);
     }
 
-    bool isHalted(&haltt) const {
+    bool &isHalted() const {
         return haltt;
     }
 };
@@ -189,10 +186,10 @@ class Machine : public CPU {
     int programCounter = 0x0A;  // Start storing in memory from address 0A
 
 public:
-    void loadProgramFile(const string &filename) {
-        ifstream file(filename);
+    void loadProgramFile(const string &fileName) {
+        ifstream file(fileName);
         if (!file) {
-            cout << "Error: Could not open file " << filename << endl;
+            cout << "Error: Could not open file " << fileName << endl;
             return;
         }
 
@@ -210,7 +207,7 @@ public:
         }
 
         file.close();
-        cout << "Program loaded from " << filename << " with " << address << " instructions." << endl;
+        cout << "Program loaded from " << fileName << " with " << address << " instructions." << endl;
     }
 
     void outputState() {
@@ -227,8 +224,6 @@ public:
     }
 
     void run() {
-        bool haltt = false;
-
         while (!isHalted()) {
             runNextStep(memory, programCounter, haltt);
             outputState();
@@ -238,9 +233,11 @@ public:
 
 int main() {
     Machine machine;
+    string fileName;
+    cout << "Enter the file name: ";
+    cin >> fileName;
 
-    machine.loadProgramFile("program.txt");
-
+    machine.loadProgramFile(fileName);
     machine.run();
 
     return 0;
